@@ -1,0 +1,321 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Smart Plant Dashboard</title>
+    <link rel="stylesheet" href="assets/css/styles.css"> 
+</head>
+<body>
+    <div class="dashboard">
+        <div class="sidebar">
+            <div class="logo">
+                🌱 SmartPlant Pro
+            </div>
+            <ul class="nav-list">
+                <li class="nav-item active" data-target="dashboard-content">
+                    <span>📊</span> Dashboard
+                </li>
+                <li class="nav-item" data-target="mis-plantas-content">
+                    <span>🌿</span> Mis Plantas
+                </li>
+                <li class="nav-item" data-target="analisis-content">
+                    <span>📈</span> Análisis
+                </li>
+                <li class="nav-item" data-target="configuracion-content">
+                    <span>⚙️</span> Configuración
+                </li>
+                <li class="nav-item" data-target="esp32-status-content">
+                    <span>💡</span> ESP32 Status
+                </li>
+            </ul>
+        </div>
+
+        <div class="main-content">
+            <div id="dashboard-content" class="content-section active">
+                <div class="header">
+                    <h1>Dashboard de Plantas</h1>
+                    <p>Monitoreo inteligente de tus plantas en tiempo real</p>
+                </div>
+                <div class="card">
+                    <div class="card-header">
+                        <h3 class="card-title">Seleccionar Planta</h3>
+                    </div>
+                    <select class="plant-selector" id="plantSelector" onchange="changePlant()">
+                        <option value="pothos">🌿 Pothos (Planta de interior)</option>
+                        <option value="snake">🐍 Sansevieria (Planta serpiente)</option>
+                        <option value="aloe">🌵 Aloe Vera</option>
+                        <option value="ficus">🌳 Ficus</option>
+                        <option value="monstera">🍃 Monstera Deliciosa</option>
+                        <option value="lavender">💜 Lavanda</option>
+                    </select>
+                    
+                    <div class="plant-info" id="plantInfo">
+                        <h4 id="plantName">🌿 Pothos</h4>
+                        <p><strong>Frecuencia de riego:</strong> <span id="wateringFreq">Cada 7-10 días</span></p>
+                        <p><strong>Humedad ideal:</strong> <span id="idealHumidity">40-60%</span></p>
+                        <p><strong>Características:</strong> <span id="plantCharacteristics">Resistente, perfecta para principiantes</span></p>
+                    </div>
+                </div>
+
+                <div class="grid">
+                    <div class="card">
+                        <div class="card-header">
+                            <h3 class="card-title">Estado Actual</h3>
+                            <div class="led-status">
+                                <div class="led-indicator" id="ledIndicator"></div>
+                                <span id="ledStatus">Necesita agua</span>
+                            </div>
+                        </div>
+                        
+                        <div id="currentAlert" class="alert alert-warning">
+                            <span>⚠️</span>
+                            <span id="alertMessage">Humedad por debajo del nivel óptimo para Pothos</span>
+                        </div>
+
+                        <div class="humidity-display">
+                            <div class="progress-ring">
+                                <svg>
+                                    <circle class="progress-ring-circle progress-ring-bg" cx="60" cy="60" r="52"/>
+                                    <circle class="progress-ring-circle progress-ring-progress" cx="60" cy="60" r="52" 
+                                            stroke-dasharray="0 327" id="progressCircle"/>
+                                </svg>
+                            </div>
+                            <div class="humidity-value" id="humidityValue">35%</div>
+                            <div class="humidity-status" id="humidityStatus">Humedad del suelo</div>
+                        </div>
+
+                        <button class="btn btn-primary" id="waterButton" onclick="waterPlant()">
+                            💧 Regar Planta
+                        </button>
+                    </div>
+
+                    <div class="card">
+                        <div class="card-header">
+                            <h3 class="card-title">Datos de Sensores</h3>
+                        </div>
+                        
+                        <div class="sensor-grid">
+                            <div class="sensor-item">
+                                <div class="sensor-value" style="color: #3b82f6;" id="temperature">22°C</div>
+                                <div class="sensor-label">Temperatura</div>
+                            </div>
+                            <div class="sensor-item">
+                                <div class="sensor-value" style="color: #10b981;" id="humidity">35%</div>
+                                <div class="sensor-label">Humedad Suelo</div>
+                            </div>
+                            <div class="sensor-item">
+                                <div class="sensor-value" style="color: #f59e0b;" id="light">65%</div>
+                                <div class="sensor-label">Luz Ambiente</div>
+                            </div>
+                            <div class="sensor-item">
+                                <div class="sensor-value" style="color: #8b5cf6;" id="ph">6.8</div>
+                                <div class="sensor-label">pH del Suelo</div>
+                            </div>
+                        </div>
+
+                        <div style="margin-top: 1rem; padding: 1rem; background: rgba(51, 65, 85, 0.3); border-radius: 8px;">
+                            <div style="display: flex; justify-content: space-between; margin-bottom: 0.5rem;">
+                                <span>ESP32 Status:</span>
+                                <span style="color: #10b981;">● Conectado</span>
+                            </div>
+                            <div style="display: flex; justify-content: space-between; font-size: 0.9rem; color: #94a3b8;">
+                                <span>Última actualización:</span>
+                                <span id="lastUpdate">hace 30 seg</span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="card">
+                        <div class="card-header">
+                            <h3 class="card-title">Historial de Humedad</h3>
+                        </div>
+                        <div class="chart-container">
+                            <div class="chart-placeholder">
+                                📈 Gráfico de últimas 24 horas
+                                <br><small>Próximamente: integración con Chart.js</small>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="card">
+                        <div class="card-header">
+                            <h3 class="card-title">Cronograma de Riego</h3>
+                        </div>
+                        
+                        <div class="watering-schedule">
+                            <div class="schedule-item" id="nextWatering">
+                                <span>Próximo riego:</span>
+                                <span style="color: #10b981;">En 2 días</span>
+                            </div>
+                            <div class="schedule-item">
+                                <span>Último riego:</span>
+                                <span>Hace 5 días</span>
+                            </div>
+                            <div class="schedule-item">
+                                <span>Riegos este mes:</span>
+                                <span>4 veces</span>
+                            </div>
+                        </div>
+
+                        <button class="btn btn-secondary" style="width: 100%; margin-top: 1rem;">
+                            ⏰ Configurar Recordatorios
+                        </button>
+                    </div>
+                </div>
+            </div>
+
+            <div id="mis-plantas-content" class="content-section">
+                <div class="header">
+                    <h1>Mis Plantas</h1>
+                    <p>Gestiona todas tus plantas inteligentes.</p>
+                </div>
+                <div class="plant-list-grid">
+                    <div class="card plant-list-item">
+                        <span class="plant-icon">🌿</span>
+                        <h4>Pothos</h4>
+                        <p>Humedad: 35%</p>
+                        <p>Último riego: Hace 5 días</p>
+                    </div>
+                    <div class="card plant-list-item">
+                        <span class="plant-icon">🌵</span>
+                        <h4>Aloe Vera</h4>
+                        <p>Humedad: 48%</p>
+                        <p>Último riego: Hace 10 días</p>
+                    </div>
+                    <div class="card plant-list-item">
+                        <span class="plant-icon">💜</span>
+                        <h4>Lavanda</h4>
+                        <p>Humedad: 28%</p>
+                        <p>Último riego: Hace 2 días</p>
+                    </div>
+                    <div class="card add-plant-btn" onclick="addPlant()">
+                        <span>➕</span> Añadir Nueva Planta
+                    </div>
+                </div>
+            </div>
+
+            <div id="analisis-content" class="content-section">
+                <div class="header">
+                    <h1>Análisis de Datos</h1>
+                    <p>Historial y tendencias de tus plantas.</p>
+                </div>
+                <div class="card">
+                    <div class="card-header">
+                        <h3 class="card-title">Datos Promedio (Última Semana)</h3>
+                    </div>
+                    <div class="chart-container">
+                        <div class="chart-placeholder simulated">
+                            <div class="chart-bar temp" style="height: 60%;">
+                                <div class="bar-value">24°C</div>
+                                <div class="bar-label">Temp</div>
+                            </div>
+                            <div class="chart-bar hum" style="height: 45%;">
+                                <div class="bar-value">45%</div>
+                                <div class="bar-label">Humedad</div>
+                            </div>
+                            <div class="chart-bar light" style="height: 80%;">
+                                <div class="bar-value">80%</div>
+                                <div class="bar-label">Luz</div>
+                            </div>
+                            <div class="chart-bar ph" style="height: 55%;">
+                                <div class="bar-value">6.5</div>
+                                <div class="bar-label">pH</div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div id="configuracion-content" class="content-section">
+                <div class="header">
+                    <h1>Configuración</h1>
+                    <p>Ajustes de notificaciones, sensores y perfil.</p>
+                </div>
+                <div class="card">
+                    <div class="card-header">
+                        <h3 class="card-title">Ajustes Generales</h3>
+                    </div>
+                    <div class="config-item">
+                        <span>Recibir notificaciones de riego</span>
+                        <label class="toggle-switch">
+                            <input type="checkbox" checked>
+                            <span class="slider"></span>
+                        </label>
+                    </div>
+                    <div class="config-item">
+                        <span>Alertas de baja batería del ESP32</span>
+                        <label class="toggle-switch">
+                            <input type="checkbox" checked>
+                            <span class="slider"></span>
+                        </label>
+                    </div>
+                    <div class="config-item">
+                        <span>Modo oscuro automático</span>
+                        <label class="toggle-switch">
+                            <input type="checkbox">
+                            <span class="slider"></span>
+                        </label>
+                    </div>
+                </div>
+                <div class="card" style="margin-top: 1.5rem;">
+                    <div class="card-header">
+                        <h3 class="card-title">Calibración de Sensores</h3>
+                    </div>
+                    <div class="config-item">
+                        <span>Calibrar sensor de humedad</span>
+                        <button class="btn btn-secondary">Iniciar</button>
+                    </div>
+                    <div class="config-item">
+                        <span>Calibrar sensor de pH</span>
+                        <button class="btn btn-secondary">Iniciar</button>
+                    </div>
+                </div>
+            </div>
+
+            <div id="esp32-status-content" class="content-section">
+                <div class="header">
+                    <h1>Estado del Dispositivo ESP32</h1>
+                    <p>Información técnica de tu hardware.</p>
+                </div>
+                <div class="card">
+                    <div class="card-header">
+                        <h3 class="card-title">Estado de Conexión</h3>
+                    </div>
+                    <div class="schedule-item">
+                        <span>Estado:</span>
+                        <span class="status-badge status-connected">Conectado</span>
+                    </div>
+                    <div class="schedule-item">
+                        <span>Intensidad Wi-Fi (RSSI):</span>
+                        <span>-45 dBm (Excelente)</span>
+                    </div>
+                    <div class="schedule-item">
+                        <span>Última conexión:</span>
+                        <span>Hace 30 segundos</span>
+                    </div>
+                </div>
+                <div class="card" style="margin-top: 1.5rem;">
+                    <div class="card-header">
+                        <h3 class="card-title">Detalles de Hardware</h3>
+                    </div>
+                    <div class="schedule-item">
+                        <span>Nivel de Batería:</span>
+                        <span class="status-badge status-low">20%</span>
+                    </div>
+                    <div class="schedule-item">
+                        <span>Versión de Firmware:</span>
+                        <span>1.2.5</span>
+                    </div>
+                    <div class="schedule-item">
+                        <span>Tiempo Activo (Uptime):</span>
+                        <span>4 días, 8 horas</span>
+                    </div>
+                </div>
+            </div>
+
+        </div>
+    </div>
+    <script src="assets/js/dashboard.js"></script> 
+</body>
+</html>
