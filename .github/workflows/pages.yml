@@ -1,38 +1,34 @@
-# Nombre del workflow (aparece en la pestaña "Actions" de GitHub)
-name: Deploy Pages (frontend)
+name: Deploy to GitHub Pages
 
-# Cuándo se ejecuta el workflow
 on:
-  push:                  # Se dispara cuando haces un push...
-    branches: [ "main" ] # ...a la rama main (puedes cambiar a otra rama si quieres)
-  workflow_dispatch:     # También lo puedes ejecutar manualmente desde Actions
+  push:
+    branches: [ main ]
+  workflow_dispatch:
 
-# Permisos necesarios para que GitHub pueda publicar en Pages
 permissions:
-  contents: read   # Permite leer el contenido del repo
-  pages: write     # Permite escribir (publicar) en GitHub Pages
-  id-token: write  # Autenticación segura para el deploy
+  contents: read
+  pages: write
+  id-token: write
 
-# Cambia el directorio de trabajo por defecto (opcional)
-# Aquí decimos que la raíz de todo lo que se copie esté en /frontend
-defaults:
-  run:
-    working-directory: frontend
+concurrency:
+  group: "pages"
+  cancel-in-progress: false
 
-# Definición de los trabajos (jobs) que se ejecutan
 jobs:
-  deploy:                # Nombre del job (puedes llamarlo como quieras)
-    runs-on: ubuntu-latest  # En qué sistema se ejecuta (máquina virtual Linux)
-    steps:               # Pasos que se van a realizar en orden
-      - name: Checkout repo
-        uses: actions/checkout@v4   # Clona tu repo en la máquina virtual
+  deploy:
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
 
-      - name: Upload artifact
+      - name: Upload static site from /frontend
         uses: actions/upload-pages-artifact@v3
         with:
-          path: ./frontend          # Carpeta que se va a empaquetar y subir (tu sitio)
+          path: ./frontend
 
       - name: Deploy to GitHub Pages
+        id: deployment
         uses: actions/deploy-pages@v4
-        # Esta acción agarra el artefacto y lo publica en GitHub Pages
-  
