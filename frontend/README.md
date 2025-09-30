@@ -1,0 +1,1 @@
+Este esel frontend del sistema interactivo de plantas, que sirve para que se use de la forma más intuitiva, y fácil posible para cualquier usuario, mejorando con ello, la experiencia del usuario

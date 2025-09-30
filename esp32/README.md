@@ -1,0 +1,1 @@
+Aquí se encuentran todas las configuraciones y codificaciones de señales brindadas y ejecutadas por parte del esp32 tanto con el sensor, como el actuador, todo trabajará dentro de esta lógica.

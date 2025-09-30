@@ -1,0 +1,1 @@
+Este es el backend del sistema, el cual contiene toda la conexión con el servidor de MONGODB ATLAS, así como la conexión de internet del esp32 que sirve para el envio de información del sensor que posterior a su información responderá el actuador.

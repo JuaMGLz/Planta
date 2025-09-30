@@ -1,0 +1,37 @@
+# Nombre del workflow (aparece en la pestaña "Actions" de GitHub)
+name: Deploy Pages (frontend)
+
+# Cuándo se ejecuta el workflow
+on:
+  push:                  # Se dispara cuando haces un push...
+    branches: [ "main" ] # ...a la rama main (puedes cambiar a otra rama si quieres)
+  workflow_dispatch:     # También lo puedes ejecutar manualmente desde Actions
+
+# Permisos necesarios para que GitHub pueda publicar en Pages
+permissions:
+  contents: read   # Permite leer el contenido del repo
+  pages: write     # Permite escribir (publicar) en GitHub Pages
+  id-token: write  # Autenticación segura para el deploy
+
+# Cambia el directorio de trabajo por defecto (opcional)
+# Aquí decimos que la raíz de todo lo que se copie esté en /frontend
+defaults:
+  run:
+    working-directory: frontend
+
+# Definición de los trabajos (jobs) que se ejecutan
+jobs:
+  deploy:                # Nombre del job (puedes llamarlo como quieras)
+    runs-on: ubuntu-latest  # En qué sistema se ejecuta (máquina virtual Linux)
+    steps:               # Pasos que se van a realizar en orden
+      - name: Checkout repo
+        uses: actions/checkout@v4   # Clona tu repo en la máquina virtual
+
+      - name: Upload artifact
+        uses: actions/upload-pages-artifact@v3
+        with:
+          path: ./frontend          # Carpeta que se va a empaquetar y subir (tu sitio)
+
+      - name: Deploy to GitHub Pages
+        uses: actions/deploy-pages@v4
+        # Esta acción agarra el artefacto y lo publica en GitHub Pages
