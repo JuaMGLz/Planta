@@ -81,9 +81,8 @@ async function handleAuth(event) {
             
             if (error) throw error;
             showStatus('✅ ACCESO AUTORIZADO. CARGANDO INTERFAZ...');
-            // *** CAMBIO 1: Redirección con subcarpeta para LOGIN ***
+            // Solo redirección relativa (funciona si ya estamos en la subcarpeta)
             setTimeout(()=> location.href = 'dashboard.html', 700); 
-            // Aunque este location.href puede ser relativo, el problema está en los redireccionamientos de Supabase.
             
         } else {
             // ***** LÓGICA DE REGISTRO *****
@@ -92,7 +91,6 @@ async function handleAuth(event) {
                 return showStatus('⚠️ REGISTRO: Debes usar un Correo Electrónico válido para crear la cuenta.', false);
             }
             
-            // VALIDACIÓN CLAVE: Asegura que el nombre de usuario esté presente
             if (!username) {
                 return showStatus('⚠️ REGISTRO: El Nombre de Usuario es obligatorio para crear una cuenta directa.', false);
             }
@@ -105,12 +103,12 @@ async function handleAuth(event) {
                 options: {
                     data: { 
                         username, 
-                        full_name, // Opcional (puede ser null)
-                        url_avatar: avatar_url, // Opcional (puede ser null)
+                        full_name, 
+                        url_avatar: avatar_url, 
                         limite_plantas: 5,
                         es_administrador: false
                     },
-                    // *** CAMBIO 2: Redirección con subcarpeta para REGISTRO ***
+                    // *** CORRECCIÓN: Usar la ruta absoluta para el correo de confirmación ***
                     emailRedirectTo: `${location.origin}/Planta/dashboard.html` 
                 }
             });
@@ -129,11 +127,11 @@ async function handleAuth(event) {
 }
 
 async function loginWithGoogle() {
-    // *** CAMBIO 3: Redirección con subcarpeta para GOOGLE ***
     try {
         showStatus('⚙️ Abriendo Google...');
         const { error } = await supabase.auth.signInWithOAuth({
             provider: 'google',
+            // *** CORRECCIÓN: Usar la ruta absoluta para el redireccionamiento OAuth ***
             options: { redirectTo: `${location.origin}/Planta/dashboard.html` }
         });
         if (error) throw error;
