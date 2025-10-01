@@ -1,238 +1,322 @@
 /* Estilos Globales y Fondo */
 * {
-    margin: 0;
-    padding: 0;
-    box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
 }
 
 :root {
-    --color-primary: #10b981; /* Verde esmeralda (Acento principal) */
-    --color-secondary: #0f172a; /* Azul oscuro (Fondo) */
-    --color-box-bg: #1e293b; /* Azul oscuro medio (Fondo de caja) */
-    --color-text-light: #e2e8f0;
-    --color-text-muted: #94a3b8;
-    --color-neon-shadow: 0 0 10px rgba(16, 185, 129, 0.7), 0 0 20px rgba(16, 185, 129, 0.3);
+  --color-primary: #10b981; /* Verde esmeralda (Acento principal) */
+  --color-secondary: #0f172a; /* Azul oscuro (Fondo) */
+  --color-box-bg: #1e293b; /* Azul oscuro medio (Fondo de caja) */
+  --color-text-light: #e2e8f0;
+  --color-text-muted: #94a3b8;
+  --color-neon-shadow: 0 0 10px rgba(16, 185, 129, 0.7),
+    0 0 20px rgba(16, 185, 129, 0.3);
 }
 
 body {
-    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-    background: linear-gradient(135deg, var(--color-secondary) 0%, #000000 70%, #1e293b 100%);
-    color: var(--color-text-light);
-    min-height: 100vh;
-    display: flex;
-    justify-content: center;
-    align-items: center;
-    perspective: 1000px;
-    padding: 20px; /* Añadido padding para asegurar margen en pantallas muy pequeñas */
+  font-family: "Segoe UI", Tahoma, Geneva, Verdana, sans-serif;
+  background: linear-gradient(
+    135deg,
+    var(--color-secondary) 0%,
+    #000000 70%,
+    #1e293b 100%
+  );
+  color: var(--color-text-light);
+  min-height: 100vh;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  perspective: 1000px;
+  padding: 20px; /* Añadido padding para asegurar margen en pantallas muy pequeñas */
 }
 
 /* Contenedor y Caja de Login */
 .login-container {
-    width: 100%;
-    max-width: 450px; /* Ancho máximo para desktop */
+  width: 100%;
+  max-width: 450px; /* Ancho máximo para desktop */
 }
 
 .login-box {
-    background: var(--color-box-bg);
-    border: 2px solid var(--color-primary); 
-    border-radius: 12px;
-    padding: 3rem 2.5rem;
-    box-shadow: var(--color-neon-shadow);
-    text-align: center;
-    transform: rotateY(0deg); 
-    transition: transform 0.5s ease-in-out;
+  background: var(--color-box-bg);
+  border: 2px solid var(--color-primary);
+  border-radius: 12px;
+  padding: 3rem 2.5rem;
+  box-shadow: var(--color-neon-shadow);
+  text-align: center;
+  transform: rotateY(0deg);
+  transition: transform 0.5s ease-in-out;
 }
 
 .login-box:hover {
-    transform: rotateY(2deg);
+  transform: rotateY(2deg);
 }
 
 .logo {
-    font-size: 2rem;
-    font-weight: 900;
-    color: var(--color-primary);
-    margin-bottom: 2rem;
-    text-shadow: 0 0 5px var(--color-primary);
+  font-size: 2rem;
+  font-weight: 900;
+  color: var(--color-primary);
+  margin-bottom: 2rem;
+  text-shadow: 0 0 5px var(--color-primary);
 }
 
 .login-box h2 {
-    font-size: 1.8rem;
-    margin-bottom: 0.5rem;
-    color: #fff;
-    text-transform: uppercase;
+  font-size: 1.8rem;
+  margin-bottom: 0.5rem;
+  color: #fff;
+  text-transform: uppercase;
 }
 
 .login-box p {
-    color: var(--color-text-muted);
-    margin-bottom: 2rem;
-    font-style: italic;
+  color: var(--color-text-muted);
+  margin-bottom: 2rem;
+  font-style: italic;
 }
 
 /* Grupos de Input */
 .input-group {
-    text-align: left;
-    margin-bottom: 1.5rem;
+  text-align: left;
+  margin-bottom: 1.5rem;
 }
 
 .input-group label {
-    display: block;
-    margin-bottom: 0.5rem;
-    font-size: 0.9rem;
-    font-weight: 600;
-    color: var(--color-primary);
-    text-transform: uppercase;
+  display: block;
+  margin-bottom: 0.5rem;
+  font-size: 0.9rem;
+  font-weight: 600;
+  color: var(--color-primary);
+  text-transform: uppercase;
 }
 
 .input-group input {
-    width: 100%;
-    padding: 1rem;
-    background: #0f172a;
-    border: 1px solid var(--color-primary);
-    border-radius: 5px; 
-    color: var(--color-text-light);
-    font-size: 1rem;
-    transition: box-shadow 0.3s, border-color 0.3s;
+  width: 100%;
+  padding: 1rem;
+  background: #0f172a;
+  border: 1px solid var(--color-primary);
+  border-radius: 5px;
+  color: var(--color-text-light);
+  font-size: 1rem;
+  transition: box-shadow 0.3s, border-color 0.3s;
 }
 
 .input-group input:focus {
-    border-color: #f1f5f9;
-    box-shadow: 0 0 8px var(--color-primary);
-    outline: none;
+  border-color: #f1f5f9;
+  box-shadow: 0 0 8px var(--color-primary);
+  outline: none;
 }
 
 /* Botones */
 .btn {
-    width: 100%;
-    padding: 1rem 0;
-    border: none;
-    border-radius: 5px; 
-    font-weight: 700;
-    text-transform: uppercase;
-    cursor: pointer;
-    transition: all 0.3s ease;
-    display: flex;
-    justify-content: center;
-    align-items: center;
-    gap: 0.75rem;
-    margin-bottom: 1rem;
-    position: relative;
-    overflow: hidden; 
+  width: 100%;
+  padding: 1rem 0;
+  border: none;
+  border-radius: 5px;
+  font-weight: 700;
+  text-transform: uppercase;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  gap: 0.75rem;
+  margin-bottom: 1rem;
+  position: relative;
+  overflow: hidden;
 }
 
 .btn-primary {
-    background: var(--color-primary);
-    color: var(--color-secondary);
-    margin-top: 2rem;
-    box-shadow: 0 0 10px rgba(16, 185, 129, 0.5); 
+  background: var(--color-primary);
+  color: var(--color-secondary);
+  margin-top: 2rem;
+  box-shadow: 0 0 10px rgba(16, 185, 129, 0.5);
 }
 
 .btn-primary:hover {
-    background: #059669;
-    box-shadow: 0 0 25px var(--color-primary), 0 0 50px var(--color-primary);
-    transform: scale(1.02);
+  background: #059669;
+  box-shadow: 0 0 25px var(--color-primary), 0 0 50px var(--color-primary);
+  transform: scale(1.02);
 }
 
 .btn-secondary {
-    background: #334155;
-    color: var(--color-text-light);
-    border: 1px solid var(--color-text-muted);
+  background: #334155;
+  color: var(--color-text-light);
+  border: 1px solid var(--color-text-muted);
 }
 
 /* ESTILOS ESPECÍFICOS PARA EL BOTÓN DE GOOGLE */
 .google-btn {
-    border: 1px solid #4285f4;
-    background: #334155;
-    color: #4285f4;
-    transition: all 0.3s ease;
-    /* Sobreescribe el padding del botón genérico para que no sea tan alto */
-    padding: 0.75rem 0; 
+  border: 1px solid #4285f4;
+  background: #334155;
+  color: #4285f4;
+  transition: all 0.3s ease;
+  /* Sobreescribe el padding del botón genérico para que no sea tan alto */
+  padding: 0.75rem 0;
 }
 
 .google-btn:hover {
-    background: #4285f4;
-    color: white;
-    border-color: #4285f4;
+  background: #4285f4;
+  color: white;
+  border-color: #4285f4;
 }
 
 .google-btn img.icon {
-    /* CLAVE DE LA SOLUCIÓN: Controla el tamaño de la imagen */
-    width: 24px; 
-    height: 24px;
-    /* Asegura que la imagen no tenga un ancho heredado enorme */
-    max-width: 100%; 
-    display: inline-block;
-    vertical-align: middle;
-    margin-right: 0.5rem; /* Espacio entre el icono y el texto */
+  /* CLAVE DE LA SOLUCIÓN: Controla el tamaño de la imagen */
+  width: 24px;
+  height: 24px;
+  /* Asegura que la imagen no tenga un ancho heredado enorme */
+  max-width: 100%;
+  display: inline-block;
+  vertical-align: middle;
+  margin-right: 0.5rem; /* Espacio entre el icono y el texto */
 }
 
 /* FIN DE ESTILOS ESPECÍFICOS PARA GOOGLE */
 
-
 .separator {
-    display: flex;
-    align-items: center;
-    text-align: center;
-    margin: 2rem 0;
-    color: var(--color-text-muted);
-    font-size: 0.9rem;
-    text-transform: uppercase;
+  display: flex;
+  align-items: center;
+  text-align: center;
+  margin: 2rem 0;
+  color: var(--color-text-muted);
+  font-size: 0.9rem;
+  text-transform: uppercase;
 }
 
 .separator::before,
 .separator::after {
-    content: '';
-    flex: 1;
-    border-bottom: 1px dashed var(--color-text-muted);
+  content: "";
+  flex: 1;
+  border-bottom: 1px dashed var(--color-text-muted);
 }
 
 .separator:not(:empty)::before {
-    margin-right: 1em;
+  margin-right: 1em;
 }
 
 .separator:not(:empty)::after {
-    margin-left: 1em;
+  margin-left: 1em;
 }
 
 /* Texto de Pie de Página */
 .footer-text {
-    margin-top: 1.5rem;
-    font-size: 0.95rem;
-    color: var(--color-text-muted);
+  margin-top: 1.5rem;
+  font-size: 0.95rem;
+  color: var(--color-text-muted);
 }
 
 .footer-text a {
-    color: var(--color-primary);
-    text-decoration: none;
-    font-weight: 600;
-    transition: color 0.3s, text-shadow 0.3s;
+  color: var(--color-primary);
+  text-decoration: none;
+  font-weight: 600;
+  transition: color 0.3s, text-shadow 0.3s;
 }
 
 .footer-text a:hover {
-    color: #fff;
-    text-shadow: var(--color-neon-shadow);
+  color: #fff;
+  text-shadow: var(--color-neon-shadow);
 }
 
 #status-message {
-    margin-top: 1.5rem;
-    padding: 1rem;
-    border-radius: 8px;
-    font-weight: 600;
+  margin-top: 1.5rem;
+  padding: 1rem;
+  border-radius: 8px;
+  font-weight: 600;
 }
 
 .message-success {
-    background: rgba(16, 185, 129, 0.2);
-    border: 1px solid var(--color-primary);
-    color: var(--color-primary);
-    box-shadow: 0 0 8px var(--color-primary);
+  background: rgba(16, 185, 129, 0.2);
+  border: 1px solid var(--color-primary);
+  color: var(--color-primary);
+  box-shadow: 0 0 8px var(--color-primary);
 }
 
 .message-error {
-    background: rgba(239, 68, 68, 0.2);
-    border: 1px solid #ef4444;
-    color: #ef4444;
-    box-shadow: 0 0 8px #ef4444;
+  background: rgba(239, 68, 68, 0.2);
+  border: 1px solid #ef4444;
+  color: #ef4444;
+  box-shadow: 0 0 8px #ef4444;
 }
 
 .hidden {
-    display: none;
+  display: none;
+}
+/* ================================================= */
+/* === RESPONSIVE DESIGN: AJUSTES PARA PANTALLAS === */
+/* ================================================= */
+
+/* Ajustes para pantallas PEQUEÑAS (Móviles) */
+@media (max-width: 550px) {
+  /* Cuerpo: Reducir el padding general si es necesario (ya tienes 20px) */
+  body {
+    /* background-attachment: fixed; */
+    /* Eliminamos la perspectiva en móvil para mejorar rendimiento */
+    perspective: none;
+  }
+
+  /* Contenedor principal: Asegurar que el padding del body sea suficiente */
+  .login-container {
+    padding: 0 15px; /* Pequeño padding horizontal para móviles */
+    max-width: 100%;
+  }
+
+  /* Caja de Login: Reducir padding interno y quitar efectos 3D en móvil */
+  .login-box {
+    padding: 2.5rem 1.5rem; /* Menos padding interno */
+    border-radius: 8px; /* Bordes un poco menos redondeados */
+    transform: rotateY(0deg) !important; /* Desactiva el :hover para táctiles */
+    box-shadow: 0 0 15px rgba(16, 185, 129, 0.5); /* Sombra más sutil */
+  }
+
+  .login-box:hover {
+    transform: rotateY(
+      0deg
+    ); /* Desactiva la transformación al pasar el ratón en móvil */
+  }
+
+  /* Tipografía */
+  .logo {
+    font-size: 1.5rem;
+    margin-bottom: 1rem;
+  }
+
+  .login-box h2 {
+    font-size: 1.4rem;
+  }
+
+  .login-box p {
+    margin-bottom: 1.5rem;
+  }
+
+  /* Inputs y Botones: Ajustar tamaño */
+  .input-group label {
+    font-size: 0.8rem;
+  }
+
+  .input-group input {
+    padding: 0.8rem;
+    font-size: 0.9rem;
+  }
+
+  .btn,
+  .google-btn {
+    padding: 0.7rem 0;
+    font-size: 0.9rem;
+  }
+
+  /* Separador */
+  .separator {
+    margin: 1.5rem 0;
+    font-size: 0.8rem;
+  }
+}
+
+/* Ajustes adicionales para pantallas MEDIANAS (Tabletas) */
+@media (min-width: 551px) and (max-width: 900px) {
+  .login-container {
+    max-width: 60%; /* Ocupa más ancho en tabletas */
+  }
+  .login-box {
+    padding: 3rem 2rem;
+  }
 }

@@ -1,13 +1,16 @@
 <!DOCTYPE html>
 <html lang="es">
+
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Smart Plant Dashboard</title>
-    <link rel="stylesheet" href="assets/css/styles.css"> 
+    <link rel="stylesheet" href="assets/css/styles.css">
 </head>
+
 <body>
     <div class="dashboard">
+        <div id="perfil"></div>
         <div class="sidebar">
             <div class="logo">
                 🌱 SmartPlant Pro
@@ -49,12 +52,13 @@
                         <option value="monstera">🍃 Monstera Deliciosa</option>
                         <option value="lavender">💜 Lavanda</option>
                     </select>
-                    
+
                     <div class="plant-info" id="plantInfo">
                         <h4 id="plantName">🌿 Pothos</h4>
                         <p><strong>Frecuencia de riego:</strong> <span id="wateringFreq">Cada 7-10 días</span></p>
                         <p><strong>Humedad ideal:</strong> <span id="idealHumidity">40-60%</span></p>
-                        <p><strong>Características:</strong> <span id="plantCharacteristics">Resistente, perfecta para principiantes</span></p>
+                        <p><strong>Características:</strong> <span id="plantCharacteristics">Resistente, perfecta para
+                                principiantes</span></p>
                     </div>
                 </div>
 
@@ -67,7 +71,7 @@
                                 <span id="ledStatus">Necesita agua</span>
                             </div>
                         </div>
-                        
+
                         <div id="currentAlert" class="alert alert-warning">
                             <span>⚠️</span>
                             <span id="alertMessage">Humedad por debajo del nivel óptimo para Pothos</span>
@@ -76,9 +80,9 @@
                         <div class="humidity-display">
                             <div class="progress-ring">
                                 <svg>
-                                    <circle class="progress-ring-circle progress-ring-bg" cx="60" cy="60" r="52"/>
-                                    <circle class="progress-ring-circle progress-ring-progress" cx="60" cy="60" r="52" 
-                                            stroke-dasharray="0 327" id="progressCircle"/>
+                                    <circle class="progress-ring-circle progress-ring-bg" cx="60" cy="60" r="52" />
+                                    <circle class="progress-ring-circle progress-ring-progress" cx="60" cy="60" r="52"
+                                        stroke-dasharray="0 327" id="progressCircle" />
                                 </svg>
                             </div>
                             <div class="humidity-value" id="humidityValue">35%</div>
@@ -94,7 +98,7 @@
                         <div class="card-header">
                             <h3 class="card-title">Datos de Sensores</h3>
                         </div>
-                        
+
                         <div class="sensor-grid">
                             <div class="sensor-item">
                                 <div class="sensor-value" style="color: #3b82f6;" id="temperature">22°C</div>
@@ -114,12 +118,14 @@
                             </div>
                         </div>
 
-                        <div style="margin-top: 1rem; padding: 1rem; background: rgba(51, 65, 85, 0.3); border-radius: 8px;">
+                        <div
+                            style="margin-top: 1rem; padding: 1rem; background: rgba(51, 65, 85, 0.3); border-radius: 8px;">
                             <div style="display: flex; justify-content: space-between; margin-bottom: 0.5rem;">
                                 <span>ESP32 Status:</span>
                                 <span style="color: #10b981;">● Conectado</span>
                             </div>
-                            <div style="display: flex; justify-content: space-between; font-size: 0.9rem; color: #94a3b8;">
+                            <div
+                                style="display: flex; justify-content: space-between; font-size: 0.9rem; color: #94a3b8;">
                                 <span>Última actualización:</span>
                                 <span id="lastUpdate">hace 30 seg</span>
                             </div>
@@ -142,7 +148,7 @@
                         <div class="card-header">
                             <h3 class="card-title">Cronograma de Riego</h3>
                         </div>
-                        
+
                         <div class="watering-schedule">
                             <div class="schedule-item" id="nextWatering">
                                 <span>Próximo riego:</span>
@@ -316,6 +322,24 @@
 
         </div>
     </div>
-    <script src="assets/js/dashboard.js"></script> 
+    <script src="assets/js/dashboard.js"></script>
+
+    <script src="assets/js/supabase-init.js"></script>
+    <script>
+        (async () => {
+            const { data: { session } } = await supabase.auth.getSession();
+            if (!session) { location.href = 'index.html'; return; }
+
+            const { data: perfil, error } = await supabase
+                .from('perfiles').select('*')
+                .eq('id', session.user.id).single();
+
+            if (error) console.error(error);
+            document.getElementById('perfil').textContent =
+                perfil ? `Hola, ${perfil.nombre_completo || perfil.nombre_usuario}` : 'Perfil no encontrado';
+        })();
+    </script>
+
 </body>
+
 </html>
