@@ -10,7 +10,6 @@
 
 <body>
     <div class="dashboard">
-        <div id="perfil"></div>
         <div class="sidebar">
             <div class="logo">
                 🌱 SmartPlant Pro
@@ -323,23 +322,6 @@
         </div>
     </div>
     <script src="assets/js/dashboard.js"></script>
-
-    <script src="assets/js/supabase-init.js"></script>
-    <script>
-        (async () => {
-            const { data: { session } } = await supabase.auth.getSession();
-            if (!session) { location.href = 'index.html'; return; }
-
-            const { data: perfil, error } = await supabase
-                .from('perfiles').select('*')
-                .eq('id', session.user.id).single();
-
-            if (error) console.error(error);
-            document.getElementById('perfil').textContent =
-                perfil ? `Hola, ${perfil.nombre_completo || perfil.nombre_usuario}` : 'Perfil no encontrado';
-        })();
-    </script>
-
 </body>
 
 </html>
