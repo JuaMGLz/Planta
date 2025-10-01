@@ -1,39 +1,32 @@
 /************  CONFIG RUTAS (local y GitHub Pages)  ************/
-const DASHBOARD_PATH_REL = "/frontend/dashboard.html";
-// ej. si lo mueves: '/frontend/data/dashboard.html'
+const DASHBOARD_PATH_REL = "/frontend/dashboard.html"; // cambia si mueves el archivo
+const GH_USER = "juamglz";
+const GH_REPO = "Planta";
 
 // ¿Estamos en GitHub Pages?
 const IS_GH_PAGES = location.hostname.endsWith("github.io");
 
-// En Pages, el primer segmento del path es el nombre del repo (p. ej. /Planta)
-const REPO_PREFIX = IS_GH_PAGES
-  ? `/${location.pathname.split("/").filter(Boolean)[0]}`
-  : "";
+// URL ABSOLUTA de GitHub Pages (sin depender del path actual)
+const GH_BASE = `https://${GH_USER}.github.io/${GH_REPO}`;
+const GH_DASHBOARD_URL = `${GH_BASE}${DASHBOARD_PATH_REL}`;
 
-// Prefijo base según entorno
-const BASE_PREFIX = IS_GH_PAGES ? REPO_PREFIX : "";
+// En local, usa origin tal cual
+const LOCAL_DASHBOARD_URL = new URL(DASHBOARD_PATH_REL, location.origin).href;
 
-// Ruta final al dashboard (absoluta respecto al origin)
-const DASHBOARD_URL = new URL(
-  `${BASE_PREFIX}${DASHBOARD_PATH_REL}`,
-  location.origin
-).href;
+// URL final (forzada a GH si estamos en Pages)
+const DASHBOARD_URL = IS_GH_PAGES ? GH_DASHBOARD_URL : LOCAL_DASHBOARD_URL;
 
 /*******************  LÓGICA DE LOGIN/REGISTRO  *******************/
 let isLoginMode = true;
-
-// Validación de email
 const isValidEmail = (v) => /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(v);
 
 function toggleAuthMode(event) {
   if (event) event.preventDefault();
   isLoginMode = !isLoginMode;
-
   const formTitle = document.getElementById("form-title");
   const submitBtn = document.getElementById("submit-btn");
   const toggleAuth = document.getElementById("toggle-auth");
   const statusMessage = document.getElementById("status-message");
-
   const gUser = document.getElementById("group-username");
   const gName = document.getElementById("group-fullname");
   const gAvatar = document.getElementById("group-avatar");
@@ -47,7 +40,6 @@ function toggleAuthMode(event) {
     submitBtn.textContent = "ACCEDER AL SERVIDOR";
     toggleAuth.innerHTML =
       '¿No tienes una cuenta de usuario? <a href="#" onclick="toggleAuthMode(event)">CREAR CUENTA</a>';
-
     gUser.classList.add("hidden");
     gName.classList.add("hidden");
     gAvatar.classList.add("hidden");
@@ -57,7 +49,6 @@ function toggleAuthMode(event) {
     submitBtn.textContent = "REGISTRAR";
     toggleAuth.innerHTML =
       '¿Ya tienes una cuenta de usuario? <a href="#" onclick="toggleAuthMode(event)">INICIAR SESIÓN</a>';
-
     gUser.classList.remove("hidden");
     gName.classList.remove("hidden");
     gAvatar.classList.remove("hidden");
@@ -77,7 +68,6 @@ async function handleAuth(event) {
 
   const login_input = document.getElementById("email_or_username").value.trim();
   const password = document.getElementById("password").value;
-
   const username = document.getElementById("username")?.value?.trim();
   const full_name = document.getElementById("full_name")?.value?.trim() || null;
   const avatar_url =
@@ -98,31 +88,21 @@ async function handleAuth(event) {
           false
         );
       }
-
       showStatus("⚙️ CONECTANDO AL SERVIDOR... VALIDANDO CREDENCIALES.");
       const { error } = await supabase.auth.signInWithPassword({
         email: login_input,
         password,
       });
       if (error) throw error;
-
       showStatus("✅ ACCESO AUTORIZADO. CARGANDO INTERFAZ...");
       setTimeout(() => {
         location.href = DASHBOARD_URL;
       }, 700);
     } else {
-      if (!isValidEmail(login_input)) {
-        return showStatus(
-          "⚠️ REGISTRO: Debes usar un Correo Electrónico válido para crear la cuenta.",
-          false
-        );
-      }
-      if (!username) {
-        return showStatus(
-          "⚠️ REGISTRO: El Nombre de Usuario es obligatorio para crear una cuenta directa.",
-          false
-        );
-      }
+      if (!isValidEmail(login_input))
+        return showStatus("⚠️ REGISTRO: Usa un correo válido.", false);
+      if (!username)
+        return showStatus("⚠️ REGISTRO: Falta nombre de usuario.", false);
 
       showStatus("⚙️ CREANDO CUENTA...");
       const { error } = await supabase.auth.signUp({
@@ -136,24 +116,20 @@ async function handleAuth(event) {
             limite_plantas: 5,
             es_administrador: false,
           },
-          // A dónde regresará tras confirmar el correo
           emailRedirectTo: DASHBOARD_URL,
         },
       });
       if (error) throw error;
-
       showStatus(
         "✅ Cuenta creada. Revisa tu correo para confirmar y luego inicia sesión."
       );
     }
   } catch (err) {
     console.error(err);
-    let errorMessage = err.message || "Error de autenticación";
-    if (errorMessage.includes("duplicate key value")) {
-      errorMessage =
-        "El Nombre de Usuario o Correo Electrónico ya está en uso. Intenta con otro.";
-    }
-    showStatus("❌ " + errorMessage, false);
+    let m = err.message || "Error de autenticación";
+    if (m.includes("duplicate key value"))
+      m = "El usuario o correo ya está en uso.";
+    showStatus("❌ " + m, false);
   }
 }
 
@@ -162,10 +138,7 @@ async function loginWithGoogle() {
     showStatus("⚙️ Abriendo Google...");
     const { error } = await supabase.auth.signInWithOAuth({
       provider: "google",
-      options: {
-        // A dónde debe regresarte Supabase después del OAuth
-        redirectTo: DASHBOARD_URL,
-      },
+      options: { redirectTo: DASHBOARD_URL },
     });
     if (error) throw error;
   } catch (err) {
