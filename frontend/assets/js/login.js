@@ -81,7 +81,9 @@ async function handleAuth(event) {
             
             if (error) throw error;
             showStatus('✅ ACCESO AUTORIZADO. CARGANDO INTERFAZ...');
-            setTimeout(()=> location.href = 'dashboard.html', 700);
+            // *** CAMBIO 1: Redirección con subcarpeta para LOGIN ***
+            setTimeout(()=> location.href = 'dashboard.html', 700); 
+            // Aunque este location.href puede ser relativo, el problema está en los redireccionamientos de Supabase.
             
         } else {
             // ***** LÓGICA DE REGISTRO *****
@@ -108,7 +110,8 @@ async function handleAuth(event) {
                         limite_plantas: 5,
                         es_administrador: false
                     },
-                    emailRedirectTo: `${location.origin}/dashboard.html`
+                    // *** CAMBIO 2: Redirección con subcarpeta para REGISTRO ***
+                    emailRedirectTo: `${location.origin}/Planta/dashboard.html` 
                 }
             });
 
@@ -126,12 +129,12 @@ async function handleAuth(event) {
 }
 
 async function loginWithGoogle() {
-    // ... (función sin cambios) ...
+    // *** CAMBIO 3: Redirección con subcarpeta para GOOGLE ***
     try {
         showStatus('⚙️ Abriendo Google...');
         const { error } = await supabase.auth.signInWithOAuth({
             provider: 'google',
-            options: { redirectTo: `${location.origin}/dashboard.html` }
+            options: { redirectTo: `${location.origin}/Planta/dashboard.html` }
         });
         if (error) throw error;
     } catch (err) {
