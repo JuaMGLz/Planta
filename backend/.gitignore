@@ -5,3 +5,8 @@
 # __pycache__
 __pycache__/
 *.pyc
+# /esp32/firmware/.gitignore
+.pio/
+.vscode/.browse.VC.db*
+.vscode/c_cpp_properties.json
+include/secrets.h
