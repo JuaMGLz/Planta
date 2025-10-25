@@ -1,3 +1,37 @@
+// assets/js/dashboard.js
+
+// ===== CONFIGURACIÓN SUPABASE =====
+const SUPABASE_URL = "https://zgodzbybnfusfwxkjmuw.supabase.co";
+const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Inpnb2R6YnlibmZ1c2Z3eGtqbXV3Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTkyNjgyMDIsImV4cCI6MjA3NDg0NDIwMn0.13M6pLC95UqEup2Ct6A5qYyIGp53YHaYnIoJzp0rNZo";
+
+// Variable para el cliente Supabase
+let supabaseClient;
+
+// ===== INICIALIZACIÓN SUPABASE =====
+function initializeSupabase() {
+    try {
+        console.log("🔄 Inicializando Supabase...");
+        
+        // Verificar si la librería está disponible
+        if (typeof supabase === 'undefined') {
+            console.error("❌ Librería Supabase no cargada");
+            return false;
+        }
+        
+        // Crear el cliente
+        supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+        console.log("✅ Supabase inicializado correctamente");
+        console.log("supabaseClient:", supabaseClient);
+        console.log("supabaseClient.from:", typeof supabaseClient.from);
+        
+        return true;
+    } catch (error) {
+        console.error("❌ Error inicializando Supabase:", error);
+        return false;
+    }
+}
+
+// ===== DATOS DE LAS PLANTAS =====
 const plantData = {
   pothos: {
     name: "🌿 Pothos",
@@ -49,11 +83,109 @@ const plantData = {
   },
 };
 
+// ===== VARIABLES GLOBALES =====
 let currentPlant = "pothos";
 let currentHumidity = 35;
 let lastUpdateTimestamp = new Date();
+let dataRefreshInterval;
+let currentTelemetryData = null;
+const DEVICE_ID = "8a656766-c4f8-4ff9-b362-9418fb794969";
 
-// Función para cambiar la planta seleccionada
+// ===== FUNCIÓN PARA FORMATEAR NÚMEROS =====
+function formatNumber(value, decimals = 2) {
+    if (value === null || value === undefined) return '0';
+    const num = parseFloat(value);
+    if (isNaN(num)) return '0';
+    
+    // Si es un número entero, no mostrar decimales
+    if (num % 1 === 0) {
+        return num.toString();
+    }
+    
+    // Mostrar máximo 2 decimales
+    return num.toFixed(decimals);
+}
+
+// ===== FUNCIONES DE TELEMETRÍA =====
+
+async function loadLatestData() {
+  try {
+    // Verificar que Supabase esté inicializado
+    if (!supabaseClient || typeof supabaseClient.from !== 'function') {
+      console.error('❌ Supabase no está inicializado correctamente');
+      showNotification('Error: Base de datos no disponible', 'error');
+      return;
+    }
+
+    console.log("🔄 Cargando últimos datos de telemetría...");
+    
+    const { data, error } = await supabaseClient
+      .from('telemetria')
+      .select('*')
+      .eq('dispositivo_id', DEVICE_ID)
+      .order('fecha', { ascending: false })
+      .limit(1);
+
+    if (error) {
+      console.error('❌ Error al cargar datos:', error);
+      showNotification('Error al cargar datos: ' + error.message, 'error');
+      return;
+    }
+
+    if (data && data.length > 0) {
+      currentTelemetryData = data[0];
+      updateDashboardWithRealData(currentTelemetryData);
+      showNotification('Datos actualizados correctamente', 'success');
+    } else {
+      console.log('📭 No hay datos disponibles');
+      showNotification('No hay datos disponibles del dispositivo', 'warning');
+    }
+  } catch (err) {
+    console.error('❌ Error:', err);
+    showNotification('Error de conexión: ' + err.message, 'error');
+  }
+}
+
+function updateDashboardWithRealData(telemetryData) {
+  console.log('📊 Actualizando dashboard con:', telemetryData);
+  
+  // Actualizar humedad del suelo con formato
+  const soilHumidity = parseFloat(telemetryData.humedad_suelo) || 0;
+  currentHumidity = parseFloat(formatNumber(soilHumidity));
+  
+  // Actualizar temperatura con formato
+  const temp = parseFloat(telemetryData.datos_crudos?.temp_c) || 0;
+  document.getElementById("temperature").textContent = `${formatNumber(temp)}°C`;
+  
+  // Actualizar luz ambiente con formato
+  const light = parseFloat(telemetryData.luz_ambiente) || 0;
+  document.getElementById("light").textContent = `${formatNumber(light)}%`;
+  
+  // Actualizar pH con formato (1 decimal para pH)
+  const phValue = parseFloat(telemetryData.ph) || 0;
+  document.getElementById("ph").textContent = formatNumber(phValue, 1);
+  
+  // Actualizar intensidad WiFi
+  const wifiStrength = parseFloat(telemetryData.intensidad_wifi) || 0;
+  updateWifiStatus(wifiStrength);
+  
+  // Actualizar batería con formato
+  const battery = parseFloat(telemetryData.bateria) || 0;
+  updateBatteryStatus(battery);
+  
+  // Actualizar timestamp
+  lastUpdateTimestamp = new Date();
+  updateTimestamp();
+  
+  // Actualizar estado de la planta
+  updatePlantStatus();
+  
+  // Actualizar sección ESP32
+  updateESP32Status(telemetryData);
+}
+
+// ===== FUNCIONES DE LA PLANTA =====
+
 function changePlant() {
   const selector = document.getElementById("plantSelector");
   currentPlant = selector.value;
@@ -62,13 +194,11 @@ function changePlant() {
   document.getElementById("plantName").textContent = plant.name;
   document.getElementById("wateringFreq").textContent = plant.wateringFreq;
   document.getElementById("idealHumidity").textContent = plant.idealHumidity;
-  document.getElementById("plantCharacteristics").textContent =
-    plant.characteristics;
+  document.getElementById("plantCharacteristics").textContent = plant.characteristics;
 
   updatePlantStatus();
 }
 
-// Función para actualizar el estado de la planta (LED, Alerta, Próximo Riego)
 function updatePlantStatus() {
   const plant = plantData[currentPlant];
   const ledIndicator = document.getElementById("ledIndicator");
@@ -78,47 +208,35 @@ function updatePlantStatus() {
   const waterButton = document.getElementById("waterButton");
   const nextWatering = document.getElementById("nextWatering");
 
-  // Determinar estado basado en la planta específica
   if (currentHumidity < plant.minHumidity) {
     ledIndicator.className = "led-indicator led-blue";
     ledStatus.textContent = "Necesita agua";
     currentAlert.className = "alert alert-warning";
-    alertMessage.innerHTML = `⚠️ Humedad por debajo del nivel óptimo para ${
-      plant.name.split(" ")[1]
-    }`;
+    alertMessage.innerHTML = `⚠️ Humedad por debajo del nivel óptimo para ${plant.name.split(" ")[1]}`;
     waterButton.style.display = "flex";
-    nextWatering.innerHTML =
-      '<span>Próximo riego:</span><span style="color: #ef4444;">¡Ahora!</span>';
+    nextWatering.innerHTML = '<span>Próximo riego:</span><span style="color: #ef4444;">¡Ahora!</span>';
   } else if (currentHumidity > plant.maxHumidity) {
     ledIndicator.className = "led-indicator led-red";
     ledStatus.textContent = "Exceso de agua";
     currentAlert.className = "alert alert-danger";
     alertMessage.innerHTML = `🚨 Demasiada humedad - riesgo de pudrición de raíces`;
     waterButton.style.display = "none";
-    nextWatering.innerHTML =
-      '<span>Próximo riego:</span><span style="color: #f59e0b;">En 1-2 semanas</span>';
+    nextWatering.innerHTML = '<span>Próximo riego:</span><span style="color: #f59e0b;">En 1-2 semanas</span>';
   } else {
     ledIndicator.className = "led-indicator led-green";
     ledStatus.textContent = "Estado óptimo";
     currentAlert.className = "alert alert-success";
-    alertMessage.innerHTML = `✅ ${
-      plant.name.split(" ")[1]
-    } está en condiciones ideales`;
+    alertMessage.innerHTML = `✅ ${plant.name.split(" ")[1]} está en condiciones ideales`;
     waterButton.style.display = "none";
 
-    const days =
-      currentPlant === "snake" || currentPlant === "aloe"
-        ? "7-10 días"
-        : currentPlant === "lavender"
-        ? "5-7 días"
-        : "3-5 días";
+    const days = currentPlant === "snake" || currentPlant === "aloe" ? "7-10 días" : 
+                 currentPlant === "lavender" ? "5-7 días" : "3-5 días";
     nextWatering.innerHTML = `<span>Próximo riego:</span><span style="color: #10b981;">En ${days}</span>`;
   }
 
   updateProgressRing();
 }
 
-// Función para actualizar el anillo de progreso circular
 function updateProgressRing() {
   const progressCircle = document.getElementById("progressCircle");
   const humidityValue = document.getElementById("humidityValue");
@@ -128,8 +246,8 @@ function updateProgressRing() {
   progressCircle.style.strokeDasharray = `${circumference} ${circumference}`;
   progressCircle.style.strokeDashoffset = offset;
 
-  humidityValue.textContent = `${currentHumidity}%`;
-  document.getElementById("humidity").textContent = `${currentHumidity}%`;
+  humidityValue.textContent = `${formatNumber(currentHumidity)}%`;
+  document.getElementById("humidity").textContent = `${formatNumber(currentHumidity)}%`;
 
   const plant = plantData[currentPlant];
   if (currentHumidity < plant.minHumidity) {
@@ -141,14 +259,10 @@ function updateProgressRing() {
   }
 }
 
-// Función simulada de regar la planta
 function waterPlant() {
   const plant = plantData[currentPlant];
-  currentHumidity = Math.min(
-    85,
-    plant.minHumidity + Math.random() * (plant.maxHumidity - plant.minHumidity)
-  );
-  currentHumidity = Math.round(currentHumidity);
+  currentHumidity = Math.min(85, plant.minHumidity + Math.random() * (plant.maxHumidity - plant.minHumidity));
+  currentHumidity = parseFloat(formatNumber(currentHumidity));
   updatePlantStatus();
 
   const button = document.getElementById("waterButton");
@@ -156,108 +270,180 @@ function waterPlant() {
   button.style.background = "linear-gradient(135deg, #10b981, #059669)";
 
   setTimeout(() => {
-    // Vuelve al estado original, que updatePlantStatus ocultará si es óptimo
     button.innerHTML = "💧 Regar Planta";
   }, 2000);
 }
 
-// Función para simular el cambio de datos de sensores
-function updateSensors() {
-  const plant = plantData[currentPlant];
-  // Simula que la humedad baja lentamente
-  if (currentHumidity > 15) {
-    currentHumidity = Math.max(15, currentHumidity - Math.random() * 2);
+// ===== FUNCIONES AUXILIARES =====
+
+function updateWifiStatus(rssi) {
+  const wifiElements = document.querySelectorAll('#esp32-status-content .schedule-item span:last-child');
+  if (wifiElements.length > 1) {
+    let status = '';
+    let color = '#ef4444';
+    
+    if (rssi >= -50) {
+      status = 'Excelente';
+      color = '#10b981';
+    } else if (rssi >= -60) {
+      status = 'Bueno';
+      color = '#f59e0b';
+    } else if (rssi >= -70) {
+      status = 'Regular';
+      color = '#f59e0b';
+    } else {
+      status = 'Débil';
+      color = '#ef4444';
+    }
+    
+    wifiElements[1].textContent = `${formatNumber(rssi)} dBm (${status})`;
+    wifiElements[1].style.color = color;
   }
-
-  currentHumidity = Math.round(currentHumidity);
-
-  // Simulación de otros datos
-  document.getElementById("temperature").textContent = `${
-    20 + Math.round(Math.random() * 8)
-  }°C`;
-  document.getElementById("light").textContent = `${
-    50 + Math.round(Math.random() * 40)
-  }%`;
-  document.getElementById("ph").textContent = `${(
-    6.0 +
-    Math.random() * 1.5
-  ).toFixed(1)}`;
-
-  updatePlantStatus();
 }
 
-// Función para actualizar la marca de tiempo de la última actualización
+function updateBatteryStatus(battery) {
+  const batteryElement = document.querySelector('.status-badge.status-low');
+  if (batteryElement) {
+    batteryElement.textContent = `${formatNumber(battery)}%`;
+    
+    if (battery >= 70) {
+      batteryElement.className = 'status-badge status-connected';
+    } else if (battery >= 30) {
+      batteryElement.className = 'status-badge status-low';
+    } else {
+      batteryElement.className = 'status-badge status-offline';
+    }
+  }
+}
+
+function updateESP32Status(telemetryData) {
+  const esp32Section = document.getElementById('esp32-status-content');
+  
+  if (esp32Section && telemetryData) {
+    const batteryElement = esp32Section.querySelector('.status-badge');
+    if (batteryElement) {
+      const battery = parseFloat(telemetryData.bateria) || 0;
+      batteryElement.textContent = `${formatNumber(battery)}%`;
+      
+      if (battery >= 70) {
+        batteryElement.className = 'status-badge status-connected';
+      } else if (battery >= 30) {
+        batteryElement.className = 'status-badge status-low';
+      } else {
+        batteryElement.className = 'status-badge status-offline';
+      }
+    }
+    
+    const firmwareElements = esp32Section.querySelectorAll('.schedule-item span:last-child');
+    if (firmwareElements.length > 2) {
+      firmwareElements[2].textContent = telemetryData.version_firmware || 'v1.0.0';
+    }
+    
+    const uptimeElements = esp32Section.querySelectorAll('.schedule-item span:last-child');
+    if (uptimeElements.length > 3 && telemetryData.tiempo_activo_seg) {
+      const days = Math.floor(telemetryData.tiempo_activo_seg / 86400);
+      const hours = Math.floor((telemetryData.tiempo_activo_seg % 86400) / 3600);
+      uptimeElements[3].textContent = `${formatNumber(days)} días, ${formatNumber(hours)} horas`;
+    }
+  }
+}
+
+function showNotification(message, type = 'info') {
+  const notification = document.createElement('div');
+  notification.className = `alert alert-${type === 'error' ? 'danger' : type === 'warning' ? 'warning' : 'success'}`;
+  notification.innerHTML = `
+    <span>${type === 'error' ? '❌' : type === 'warning' ? '⚠️' : '✅'}</span>
+    <span>${message}</span>
+  `;
+  
+  notification.style.position = 'fixed';
+  notification.style.top = '20px';
+  notification.style.right = '20px';
+  notification.style.zIndex = '1000';
+  notification.style.minWidth = '300px';
+  notification.style.animation = 'slideInRight 0.3s ease';
+  
+  document.body.appendChild(notification);
+  
+  setTimeout(() => {
+    notification.style.animation = 'slideOutRight 0.3s ease';
+    setTimeout(() => {
+      if (notification.parentNode) {
+        notification.parentNode.removeChild(notification);
+      }
+    }, 300);
+  }, 3000);
+}
+
 function updateTimestamp() {
   const now = new Date();
   const secondsPassed = Math.floor((now - lastUpdateTimestamp) / 1000);
   if (secondsPassed < 60) {
-    document.getElementById(
-      "lastUpdate"
-    ).textContent = `hace ${secondsPassed} seg`;
+    document.getElementById("lastUpdate").textContent = `hace ${formatNumber(secondsPassed)} seg`;
   } else {
-    document.getElementById("lastUpdate").textContent = `hace ${Math.floor(
-      secondsPassed / 60
-    )} min`;
+    document.getElementById("lastUpdate").textContent = `hace ${formatNumber(Math.floor(secondsPassed / 60))} min`;
   }
 }
 
-// Función de marcador de posición para añadir planta
 function addPlant() {
   alert("Funcionalidad para añadir una nueva planta en desarrollo.");
 }
 
-document.addEventListener("DOMContentLoaded", () => {
+// ===== FUNCIONES DE AUTOREFRESCO =====
+
+function startAutoRefresh() {
+  loadLatestData();
+  dataRefreshInterval = setInterval(loadLatestData, 30000);
+}
+
+function stopAutoRefresh() {
+  if (dataRefreshInterval) {
+    clearInterval(dataRefreshInterval);
+  }
+}
+
+// ===== INICIALIZACIÓN =====
+
+function initializeDashboard() {
+  console.log("🚀 Inicializando dashboard...");
+  
+  // 1. Inicializar Supabase
+  if (!initializeSupabase()) {
+    console.error("❌ No se pudo inicializar Supabase");
+    showNotification("Error: No se puede conectar a la base de datos", "error");
+    return;
+  }
+
+  // 2. Configurar navegación
   const navItems = document.querySelectorAll(".nav-item");
   const contentSections = document.querySelectorAll(".content-section");
 
-  // Lógica para la navegación de la barra lateral
   navItems.forEach((item) => {
     item.addEventListener("click", () => {
-      // Oculta todas las secciones
       contentSections.forEach((section) => {
         section.classList.remove("active");
       });
-
-      // Desactiva todos los nav items
       navItems.forEach((nav) => {
         nav.classList.remove("active");
       });
-
-      // Muestra la sección correspondiente
       const targetId = item.dataset.target;
       document.getElementById(targetId).classList.add("active");
-
-      // Activa el nav item clicado
       item.classList.add("active");
     });
   });
 
-  const DEVICE_ID = "8a656766-c4f8-4ff9-b362-9418fb794969";
-  async function cargarUltimo() {
-    const { data, error } = await sb
-      .from("telemetria")
-      .select("*")
-      .eq("dispositivo_id", DEVICE_ID)
-      .order("fecha", { ascending: false })
-      .limit(1);
-    if (data?.length) {
-      const t = data[0];
-      document.getElementById(
-        "soil-humidity"
-      ).textContent = `${t.humedad_suelo}%`;
-      document.getElementById("temperature").textContent = `${
-        t.datos_crudos?.temp_c ?? "--"
-      } °C`;
-      document.getElementById("ambient-humidity").textContent = `${
-        t.datos_crudos?.hum_amb ?? "--"
-      } %`;
-    }
-  }
-  setInterval(cargarUltimo, 5000);
+  // 3. INICIALIZAR LA CARGA AUTOMÁTICA DE DATOS
+  startAutoRefresh();
+  
+  // 4. Inicializar el dashboard
+  changePlant();
+  updateTimestamp();
+  
+  // 5. Configurar intervalo para actualizar timestamp
+  setInterval(updateTimestamp, 1000);
+  
+  console.log("✅ Dashboard inicializado correctamente");
+}
 
-  // Inicializar el dashboard y los intervalos de simulación
-  //changePlant();
-  //updateSensors();
-  //setInterval(updateSensors, 8000);
-  setInterval(updateTimestamp, 30000);
-});
+// Iniciar cuando el DOM esté listo
+document.addEventListener("DOMContentLoaded", initializeDashboard);

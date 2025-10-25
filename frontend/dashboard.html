@@ -8,6 +8,8 @@
     <link rel="stylesheet" href="assets/css/styles.css">
 </head>
 
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+
 <body>
     <div class="dashboard">
         <div class="sidebar">
@@ -29,6 +31,11 @@
                 </li>
                 <li class="nav-item" data-target="esp32-status-content">
                     <span>💡</span> ESP32 Status
+                </li>
+
+                <!-- Botón de Salir -->
+                <li class="nav-item logout-item" onclick="showLogoutModal()">
+                    <span>🚪</span> Cerrar Sesión
                 </li>
             </ul>
         </div>
@@ -70,6 +77,11 @@
                                 <span id="ledStatus">Necesita agua</span>
                             </div>
                         </div>
+
+                        <button class="btn btn-secondary" id="measureButton" onclick="loadLatestData()"
+                            style="margin-bottom: 1rem; width: 100%;">
+                            📊 Medir Planta Ahora
+                        </button>
 
                         <div id="currentAlert" class="alert alert-warning">
                             <span>⚠️</span>
@@ -321,7 +333,65 @@
 
         </div>
     </div>
+
+    <!-- Modal de Confirmación de Cierre de Sesión -->
+    <div id="logoutModal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3>🔒 Cerrar Sesión</h3>
+                <span class="close-modal" onclick="closeLogoutModal()">&times;</span>
+            </div>
+            <div class="modal-body">
+                <div class="modal-icon">🚪</div>
+                <p>¿Estás seguro de que quieres cerrar sesión?</p>
+                <p class="modal-subtext">Serás redirigido a la página de inicio de sesión.</p>
+            </div>
+            <div class="modal-footer">
+                <button class="btn btn-secondary" onclick="closeLogoutModal()">
+                    ❌ Cancelar
+                </button>
+                <button class="btn btn-danger" onclick="confirmLogout()">
+                    ✅ Sí, Cerrar Sesión
+                </button>
+            </div>
+        </div>
+    </div>
+
     <script src="assets/js/dashboard.js"></script>
+    <script>
+        // Funciones para el modal de cierre de sesión
+        function showLogoutModal() {
+            document.getElementById('logoutModal').style.display = 'block';
+        }
+
+        function closeLogoutModal() {
+            document.getElementById('logoutModal').style.display = 'none';
+        }
+
+        function confirmLogout() {
+            // Limpiar almacenamiento local
+            localStorage.removeItem('userToken');
+            sessionStorage.clear();
+
+            // Redirigir al login (cambia por tu página de login real)
+            window.location.href = 'index.html';
+        }
+
+        // Cerrar el modal si se hace clic fuera de él
+        window.onclick = function (event) {
+            const modal = document.getElementById('logoutModal');
+            if (event.target === modal) {
+                closeLogoutModal();
+            }
+        }
+
+        // Cerrar el modal con la tecla Escape
+        document.addEventListener('keydown', function (event) {
+            if (event.key === 'Escape') {
+                closeLogoutModal();
+            }
+        });
+    </script>
 </body>
 
 </html>
