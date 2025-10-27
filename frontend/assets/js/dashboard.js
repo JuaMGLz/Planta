@@ -4,6 +4,10 @@
 const SUPABASE_URL = "https://zgodzbybnfusfwxkjmuw.supabase.co";
 const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Inpnb2R6YnlibmZ1c2Z3eGtqbXV3Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTkyNjgyMDIsImV4cCI6MjA3NDg0NDIwMn0.13M6pLC95UqEup2Ct6A5qYyIGp53YHaYnIoJzp0rNZo";
 
+// ===== CONFIGURACIÓN ESP32 =====
+let ESP32_IP = "";
+let esp32IPDetected = false;
+
 // Variable para el cliente Supabase
 let supabaseClient;
 
@@ -12,21 +16,243 @@ function initializeSupabase() {
     try {
         console.log("🔄 Inicializando Supabase...");
         
-        // Verificar si la librería está disponible
         if (typeof supabase === 'undefined') {
             console.error("❌ Librería Supabase no cargada");
             return false;
         }
         
-        // Crear el cliente
         supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
         console.log("✅ Supabase inicializado correctamente");
-        console.log("supabaseClient:", supabaseClient);
-        console.log("supabaseClient.from:", typeof supabaseClient.from);
-        
         return true;
     } catch (error) {
         console.error("❌ Error inicializando Supabase:", error);
+        return false;
+    }
+}
+
+// ===== OBTENER IP DEL ESP32 DESDE SUPABASE =====
+async function getESP32IPFromSupabase() {
+    try {
+        console.log("🔍 Obteniendo IP del ESP32 desde Supabase...");
+        
+        const { data, error } = await supabaseClient
+            .from('esp32_ips')
+            .select('ip_address, fecha')
+            .eq('dispositivo_id', DEVICE_ID)
+            .order('fecha', { ascending: false })
+            .limit(1);
+
+        if (error) {
+            console.error('❌ Error al obtener IP:', error);
+            return null;
+        }
+
+        if (data && data.length > 0) {
+            const ip = data[0].ip_address;
+            const fecha = new Date(data[0].fecha).toLocaleString();
+            console.log(`✅ IP obtenida desde Supabase: ${ip} (${fecha})`);
+            return ip;
+        } else {
+            console.log('📭 No hay IP guardada en Supabase');
+            return null;
+        }
+    } catch (err) {
+        console.error('❌ Error obteniendo IP:', err);
+        return null;
+    }
+}
+
+// ===== DETECCIÓN DE IP MEJORADA =====
+async function detectESP32IP() {
+    console.log("🕵️‍♂️ Detectando IP del ESP32...");
+    
+    // 1. Primero intentar obtener la IP desde Supabase
+    const ipFromSupabase = await getESP32IPFromSupabase();
+    
+    if (ipFromSupabase) {
+        ESP32_IP = ipFromSupabase;
+        esp32IPDetected = true;
+        showNotification(`✅ ESP32 detectado en ${ESP32_IP} (desde Supabase)`, 'success');
+        updateConnectionStatus();
+        return ESP32_IP;
+    }
+    
+    // 2. Si no hay IP en Supabase, intentar detección automática
+    console.log("🔍 No se encontró IP en Supabase, escaneando red...");
+    
+    const commonRanges = [
+        "192.168.100",  // Tu rango actual
+        "192.168.1",    // Rango común
+        "192.168.0",    // Rango común
+        "10.0.0",       // Rango común
+        "172.16.0"      // Rango común
+    ];
+    
+    const port = 80;
+    
+    for (const range of commonRanges) {
+        // Probar solo algunas IPs comunes para no saturar
+        const commonIPs = [1, 100, 136, 150, 200, 254];
+        
+        for (const lastOctet of commonIPs) {
+            const testIP = `${range}.${lastOctet}`;
+            const url = `http://${testIP}:${port}/`;
+            
+            try {
+                const controller = new AbortController();
+                const timeoutId = setTimeout(() => controller.abort(), 1000);
+                
+                const response = await fetch(url, {
+                    method: 'GET',
+                    signal: controller.signal,
+                    mode: 'no-cors'
+                });
+                
+                clearTimeout(timeoutId);
+                
+                console.log(`✅ ESP32 detectado en: ${testIP}`);
+                ESP32_IP = testIP;
+                esp32IPDetected = true;
+                
+                showNotification(`✅ ESP32 detectado en ${testIP} (escaneo automático)`, 'success');
+                updateConnectionStatus();
+                return testIP;
+                
+            } catch (error) {
+                // Continuar con la siguiente IP
+                continue;
+            }
+        }
+    }
+    
+    // 3. Si todo falla, usar IP por defecto
+    console.warn("⚠️ No se pudo detectar el ESP32, usando IP por defecto");
+    showNotification("⚠️ No se detectó el ESP32. Usando IP por defecto.", 'warning');
+    
+    ESP32_IP = "192.168.100.136";
+    esp32IPDetected = true;
+    updateConnectionStatus();
+    
+    return ESP32_IP;
+}
+
+// ===== ACTUALIZAR ESTADO DE CONEXIÓN EN EL UI =====
+function updateConnectionStatus() {
+    const statusElement = document.querySelector('#dashboard-content [style*="color: #10b981"]');
+    
+    if (statusElement && esp32IPDetected) {
+        statusElement.textContent = `● Conectado (${ESP32_IP})`;
+        statusElement.style.color = '#10b981';
+    }
+}
+
+// ===== FUNCIÓN PARA CONTROLAR EL RELAY DESDE WEB =====
+async function waterPlant() {
+    try {
+        console.log("💧 Iniciando riego desde web...");
+        
+        // Si no hemos detectado la IP, intentar detectarla primero
+        if (!esp32IPDetected) {
+            showNotification("🔍 Detectando ESP32...", 'info');
+            await detectESP32IP();
+        }
+        
+        const button = document.getElementById("waterButton");
+        const originalText = button.innerHTML;
+        
+        // 1. Mostrar estado de "regando"
+        button.innerHTML = "⏳ Regando...";
+        button.disabled = true;
+        
+        // 2. Enviar comando al ESP32
+        const success = await sendWaterCommandToESP32();
+        
+        if (success) {
+            showNotification(`💧 Comando enviado a ${ESP32_IP} - Regando planta por 5 segundos`, 'success');
+            
+            // 3. Simular efecto visual inmediato en el frontend
+            const plant = plantData[currentPlant];
+            const simulatedHumidity = Math.min(85, plant.minHumidity + 20 + Math.random() * 15);
+            currentHumidity = parseFloat(formatNumber(simulatedHumidity));
+            updatePlantStatus();
+            
+            // 4. Restaurar botón después de 2 segundos
+            setTimeout(() => {
+                button.innerHTML = "✅ Regada";
+                button.style.background = "linear-gradient(135deg, #10b981, #059669)";
+                
+                // 5. Cargar datos reales después de que termine el riego
+                setTimeout(() => {
+                    loadLatestData(); // Sincronizar con datos reales del sensor
+                    button.innerHTML = originalText;
+                    button.style.background = "";
+                    button.disabled = false;
+                }, 4000);
+                
+            }, 2000);
+            
+        } else {
+            throw new Error(`No se pudo contactar al ESP32 en ${ESP32_IP}`);
+        }
+        
+    } catch (err) {
+        console.error('❌ Error en riego:', err);
+        showNotification('Error durante el riego: ' + err.message, 'error');
+        
+        // Restaurar botón en caso de error
+        const button = document.getElementById("waterButton");
+        button.innerHTML = "💧 Regar Planta";
+        button.disabled = false;
+        
+        // Intentar redetectar la IP si falla
+        esp32IPDetected = false;
+    }
+}
+
+// Función para enviar comando al ESP32
+async function sendWaterCommandToESP32() {
+    if (!ESP32_IP) {
+        console.error("❌ No hay IP configurada para el ESP32");
+        return false;
+    }
+    
+    const url = `http://${ESP32_IP}/water`;
+    
+    try {
+        console.log(`📡 Enviando comando a: ${url}`);
+        
+        const controller = new AbortController();
+        const timeoutId = setTimeout(() => controller.abort(), 5000);
+        
+        const response = await fetch(url, {
+            method: 'POST',
+            mode: 'cors',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({ command: "water", duration: 5000 }),
+            signal: controller.signal
+        });
+        
+        clearTimeout(timeoutId);
+        
+        if (!response.ok) {
+            throw new Error(`HTTP error! status: ${response.status}`);
+        }
+        
+        const data = await response.json();
+        console.log("✅ Comando enviado al ESP32:", data);
+        return true;
+        
+    } catch (error) {
+        if (error.name === 'AbortError') {
+            console.error("❌ Timeout: El ESP32 no respondió en 5 segundos");
+            showNotification("⏰ Timeout: El ESP32 no respondió", 'error');
+        } else {
+            console.error("❌ No se pudo enviar comando al ESP32:", error.message);
+            showNotification(`❌ Error conectando a ${ESP32_IP}`, 'error');
+        }
+        
         return false;
     }
 }
@@ -97,20 +323,16 @@ function formatNumber(value, decimals = 2) {
     const num = parseFloat(value);
     if (isNaN(num)) return '0';
     
-    // Si es un número entero, no mostrar decimales
     if (num % 1 === 0) {
         return num.toString();
     }
     
-    // Mostrar máximo 2 decimales
     return num.toFixed(decimals);
 }
 
 // ===== FUNCIONES DE TELEMETRÍA =====
-
 async function loadLatestData() {
   try {
-    // Verificar que Supabase esté inicializado
     if (!supabaseClient || typeof supabaseClient.from !== 'function') {
       console.error('❌ Supabase no está inicializado correctamente');
       showNotification('Error: Base de datos no disponible', 'error');
@@ -185,7 +407,6 @@ function updateDashboardWithRealData(telemetryData) {
 }
 
 // ===== FUNCIONES DE LA PLANTA =====
-
 function changePlant() {
   const selector = document.getElementById("plantSelector");
   currentPlant = selector.value;
@@ -259,23 +480,7 @@ function updateProgressRing() {
   }
 }
 
-function waterPlant() {
-  const plant = plantData[currentPlant];
-  currentHumidity = Math.min(85, plant.minHumidity + Math.random() * (plant.maxHumidity - plant.minHumidity));
-  currentHumidity = parseFloat(formatNumber(currentHumidity));
-  updatePlantStatus();
-
-  const button = document.getElementById("waterButton");
-  button.innerHTML = "✅ Regada";
-  button.style.background = "linear-gradient(135deg, #10b981, #059669)";
-
-  setTimeout(() => {
-    button.innerHTML = "💧 Regar Planta";
-  }, 2000);
-}
-
 // ===== FUNCIONES AUXILIARES =====
-
 function updateWifiStatus(rssi) {
   const wifiElements = document.querySelectorAll('#esp32-status-content .schedule-item span:last-child');
   if (wifiElements.length > 1) {
@@ -390,7 +595,6 @@ function addPlant() {
 }
 
 // ===== FUNCIONES DE AUTOREFRESCO =====
-
 function startAutoRefresh() {
   loadLatestData();
   dataRefreshInterval = setInterval(loadLatestData, 30000);
@@ -403,46 +607,53 @@ function stopAutoRefresh() {
 }
 
 // ===== INICIALIZACIÓN =====
+async function initializeDashboard() {
+    console.log("🚀 Inicializando dashboard...");
+    
+    // 1. Inicializar Supabase
+    if (!initializeSupabase()) {
+        console.error("❌ No se pudo inicializar Supabase");
+        showNotification("Error: No se puede conectar a la base de datos", "error");
+        return;
+    }
 
-function initializeDashboard() {
-  console.log("🚀 Inicializando dashboard...");
-  
-  // 1. Inicializar Supabase
-  if (!initializeSupabase()) {
-    console.error("❌ No se pudo inicializar Supabase");
-    showNotification("Error: No se puede conectar a la base de datos", "error");
-    return;
-  }
+    // 2. Obtener la IP del ESP32 desde Supabase
+    console.log("🔍 Obteniendo IP del ESP32 desde Supabase...");
+    await detectESP32IP();
+    
+    // 3. Actualizar estado de conexión en la UI
+    updateConnectionStatus();
 
-  // 2. Configurar navegación
-  const navItems = document.querySelectorAll(".nav-item");
-  const contentSections = document.querySelectorAll(".content-section");
+    // 4. Configurar navegación
+    const navItems = document.querySelectorAll(".nav-item");
+    const contentSections = document.querySelectorAll(".content-section");
 
-  navItems.forEach((item) => {
-    item.addEventListener("click", () => {
-      contentSections.forEach((section) => {
-        section.classList.remove("active");
-      });
-      navItems.forEach((nav) => {
-        nav.classList.remove("active");
-      });
-      const targetId = item.dataset.target;
-      document.getElementById(targetId).classList.add("active");
-      item.classList.add("active");
+    navItems.forEach((item) => {
+        item.addEventListener("click", () => {
+            contentSections.forEach((section) => {
+                section.classList.remove("active");
+            });
+            navItems.forEach((nav) => {
+                nav.classList.remove("active");
+            });
+            const targetId = item.dataset.target;
+            document.getElementById(targetId).classList.add("active");
+            item.classList.add("active");
+        });
     });
-  });
 
-  // 3. INICIALIZAR LA CARGA AUTOMÁTICA DE DATOS
-  startAutoRefresh();
-  
-  // 4. Inicializar el dashboard
-  changePlant();
-  updateTimestamp();
-  
-  // 5. Configurar intervalo para actualizar timestamp
-  setInterval(updateTimestamp, 1000);
-  
-  console.log("✅ Dashboard inicializado correctamente");
+    // 5. INICIALIZAR LA CARGA AUTOMÁTICA DE DATOS
+    startAutoRefresh();
+    
+    // 6. Inicializar el dashboard
+    changePlant();
+    updateTimestamp();
+    
+    // 7. Configurar intervalo para actualizar timestamp
+    setInterval(updateTimestamp, 1000);
+    
+    console.log("✅ Dashboard inicializado correctamente");
+    console.log(`📍 ESP32 detectado en: ${ESP32_IP}`);
 }
 
 // Iniciar cuando el DOM esté listo
